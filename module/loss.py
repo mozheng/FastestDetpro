@@ -159,8 +159,8 @@ class DetectorLoss(nn.Module):
             iou_loss =  (1.0 - iou).mean() 
 
             # 计算目标类别分类分支loss
-            
-            cls_loss = BCEcls(pcls[b, gy, gx], gt_cls[0][f])
+            ps = torch.log(pcls[b, gy, gx])
+            cls_loss = BCEcls(ps, gt_cls[0][f])
 
             tobj[b, gy, gx] = 1.0
             # 统计每个图片正样本的数量
