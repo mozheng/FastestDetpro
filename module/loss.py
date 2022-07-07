@@ -2,6 +2,34 @@ import math
 import torch
 import torch.nn as nn
 
+
+class QFocalLoss(nn.Module):
+    # Wraps Quality focal loss around existing loss_fcn(), i.e. criteria = FocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)
+    def __init__(self, loss_fcn, gamma=1.5, alpha=0.25):
+        super().__init__()
+        self.loss_fcn = loss_fcn  # must be nn.BCEWithLogitsLoss()
+        self.gamma = gamma
+        self.alpha = alpha
+        self.reduction = loss_fcn.reduction
+        self.loss_fcn.reduction = 'none'  # required to apply FL to each element
+
+    def forward(self, pred, true):
+        loss = self.loss_fcn(pred, true)
+
+        pred_prob = torch.sigmoid(pred)  # prob from logits
+        alpha_factor = true * self.alpha + (1 - true) * (1 - self.alpha)
+        modulating_factor = torch.abs(true - pred_prob) ** self.gamma
+        loss *= alpha_factor * modulating_factor
+
+        if self.reduction == 'mean':
+            return loss.mean()
+        elif self.reduction == 'sum':
+            return loss.sum()
+        else:  # 'none'
+            return loss
+
+
+
 class DetectorLoss(nn.Module):
     def __init__(self, device):    
         super(DetectorLoss, self).__init__()
@@ -94,8 +122,8 @@ class DetectorLoss(nn.Module):
 
         # 定义obj和cls的损失函数
         BCEcls = nn.NLLLoss() 
-        BCEobj = nn.BCELoss(reduction='none')
-        
+        BCEobj = nn.BCEWithLogitsLoss(reduction='none')
+        BCEobj = QFocalLoss(BCEobj)
         # 构建ground truth
         gt_box, gt_cls, ps_index = self.build_target(preds, targets)
 
@@ -131,8 +159,8 @@ class DetectorLoss(nn.Module):
             iou_loss =  (1.0 - iou).mean() 
 
             # 计算目标类别分类分支loss
-            ps = torch.log(pcls[b, gy, gx])
-            cls_loss = BCEcls(ps, gt_cls[0][f])
+            
+            cls_loss = BCEcls(pcls[b, gy, gx], gt_cls[0][f])
 
             tobj[b, gy, gx] = 1.0
             # 统计每个图片正样本的数量

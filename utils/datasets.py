@@ -5,8 +5,10 @@ import numpy as np
 import torch
 import random
 
+
 def random_integer(lens):
     return random.randint(1, lens)
+
 
 def merge_bboxes(bboxes, cutx, cuty):
     # 保存修改后的检测框
@@ -102,7 +104,7 @@ def merge_bboxes(bboxes, cutx, cuty):
 
 
 # 对传入的四张图片数据增强
-def get_random_data(image_list, input_shape, min_offset=(0.3 ,0.3)):
+def get_random_data(image_list, input_shape, min_offset=(0.3, 0.3)):
     w, h = input_shape  # 获取图像的宽高
     '''设置拼接的分隔线位置'''
     min_offset_x = min_offset[0]
@@ -113,16 +115,11 @@ def get_random_data(image_list, input_shape, min_offset=(0.3 ,0.3)):
     image_datas = []  # 存放图像信息
     box_datas = []  # 存放检测框信息
 
-    #（1）图像分割
+    # （1）图像分割
     for index, frame_list in enumerate(image_list):
 
         frame = frame_list[0]  # 取出的某一张图像
-        box = np.array(frame_list[1:])  # 该图像对应的检测框坐标
-
         ih, iw = frame.shape[0:2]  # 图片的宽高
-
-        cx = (box[0, :, 0] + box[0, :, 2]) // 2  # 检测框中心点的x坐标
-        cy = (box[0, :, 1] + box[0, :, 3]) // 2  # 检测框中心点的y坐标
 
         # 对输入图像缩放
         new_ar = w/h  # 图像的宽高比
@@ -133,14 +130,6 @@ def get_random_data(image_list, input_shape, min_offset=(0.3 ,0.3)):
 
         # 缩放图像
         frame = cv2.resize(frame, (nw, nh))
-
-        # 调整中心点坐标
-        cx = cx * nw/iw
-        cy = cy * nh/ih
-
-        # 调整检测框的宽高
-        bw = (box[0, :, 2] - box[0, :, 0]) * nw/iw  # 修改后的检测框的宽高
-        bh = (box[0, :, 3] - box[0, :, 1]) * nh/ih
 
         # 创建一块[416,416]的底版
         new_frame = np.zeros((h, w, 3), np.uint8)
@@ -155,36 +144,49 @@ def get_random_data(image_list, input_shape, min_offset=(0.3 ,0.3)):
         elif index == 3:
             new_frame[h-nh:h, w-nw:w] = frame  # 第四张位于右下方
 
-        # 修正每个检测框的位置
-        if index == 0:  # 左上图像
-            box[0, :, 0] = cx - bw // 2  # x1
-            box[0, :, 1] = cy - bh // 2  # y1
-            box[0, :, 2] = cx + bw // 2  # x2
-            box[0, :, 3] = cy + bh // 2  # y2
+        if len(frame_list[1]) != 0:
+            box = np.array(frame_list[1:])  # 该图像对应的检测框坐标
+            cx = (box[0, :, 0] + box[0, :, 2]) // 2  # 检测框中心点的x坐标
+            cy = (box[0, :, 1] + box[0, :, 3]) // 2  # 检测框中心点的y坐标
+            # 调整中心点坐标
+            cx = cx * nw/iw
+            cy = cy * nh/ih
 
-        if index == 1:  # 右上图像
-            box[0, :, 0] = cx - bw // 2 + w - nw  # x1
-            box[0, :, 1] = cy - bh // 2  # y1
-            box[0, :, 2] = cx + bw // 2 + w - nw  # x2
-            box[0, :, 3] = cy + bh // 2  # y2
+            # 调整检测框的宽高
+            bw = (box[0, :, 2] - box[0, :, 0]) * nw/iw  # 修改后的检测框的宽高
+            bh = (box[0, :, 3] - box[0, :, 1]) * nh/ih
 
-        if index == 2:  # 左下图像
-            box[0, :, 0] = cx - bw // 2  # x1
-            box[0, :, 1] = cy - bh // 2 + h - nh  # y1
-            box[0, :, 2] = cx + bw // 2  # x2
-            box[0, :, 3] = cy + bh // 2 + h - nh  # y2
+            # 修正每个检测框的位置
+            if index == 0:  # 左上图像
+                box[0, :, 0] = cx - bw // 2  # x1
+                box[0, :, 1] = cy - bh // 2  # y1
+                box[0, :, 2] = cx + bw // 2  # x2
+                box[0, :, 3] = cy + bh // 2  # y2
 
-        if index == 3:  # 右下图像
-            box[0, :, 0] = cx - bw // 2 + w - nw  # x1
-            box[0, :, 1] = cy - bh // 2 + h - nh  # y1
-            box[0, :, 2] = cx + bw // 2 + w - nw  # x2
-            box[0, :, 3] = cy + bh // 2 + h - nh  # y2
+            if index == 1:  # 右上图像
+                box[0, :, 0] = cx - bw // 2 + w - nw  # x1
+                box[0, :, 1] = cy - bh // 2  # y1
+                box[0, :, 2] = cx + bw // 2 + w - nw  # x2
+                box[0, :, 3] = cy + bh // 2  # y2
 
-        # 保存处理后的图像及对应的检测框坐标
-        image_datas.append(new_frame)
-        box_datas.append(box)
+            if index == 2:  # 左下图像
+                box[0, :, 0] = cx - bw // 2  # x1
+                box[0, :, 1] = cy - bh // 2 + h - nh  # y1
+                box[0, :, 2] = cx + bw // 2  # x2
+                box[0, :, 3] = cy + bh // 2 + h - nh  # y2
 
-    #（2）将四张图像拼接在一起
+            if index == 3:  # 右下图像
+                box[0, :, 0] = cx - bw // 2 + w - nw  # x1
+                box[0, :, 1] = cy - bh // 2 + h - nh  # y1
+                box[0, :, 2] = cx + bw // 2 + w - nw  # x2
+                box[0, :, 3] = cy + bh // 2 + h - nh  # y2
+
+            # 保存处理后的图像及对应的检测框坐标
+            image_datas.append(new_frame)
+            box_datas.append(box)
+        else:
+            image_datas.append(new_frame)
+    # （2）将四张图像拼接在一起
     # 在指定范围中选择横纵向分割线
     cutx = np.random.randint(int(w*min_offset_x), int(w*(1-min_offset_x)))
     cuty = np.random.randint(int(h*min_offset_y), int(h*(1-min_offset_y)))
@@ -221,12 +223,13 @@ def get_random_data(image_list, input_shape, min_offset=(0.3 ,0.3)):
 def random_scale(image, boxes):
     height, width, _ = image.shape
     # random crop imgage
-    cw, ch = random.randint(int(width * 0.75), width), random.randint(int(height * 0.75), height)
+    cw, ch = random.randint(
+        int(width * 0.75), width), random.randint(int(height * 0.75), height)
     cx, cy = random.randint(0, width - cw), random.randint(0, height - ch)
 
     roi = image[cy:cy + ch, cx:cx + cw]
     roi_h, roi_w, _ = roi.shape
-    
+
     output = []
     for box in boxes:
         index, category = box[0], box[1]
@@ -242,12 +245,14 @@ def random_scale(image, boxes):
 
     return roi, output
 
+
 def collate_fn(batch):
     img, label = zip(*batch)
     for i, l in enumerate(label):
         if l.shape[0] > 0:
             l[:, 0] = i
     return torch.stack(img), torch.cat(label, 0)
+
 
 class TensorDataset():
     def __init__(self, path, img_width, img_height, aug=False):
@@ -262,13 +267,13 @@ class TensorDataset():
         self.img_formats = ['.bmp', '.jpg', '.jpeg', '.png']
 
         # 数据检查
-        
+
         with open(self.path, 'r') as f:
             lines = f.readlines()
             linelength = len(lines)
             for line in lines:
                 data_path = line.strip()
-                basename, ext = os.path.splitext(data_path) 
+                basename, ext = os.path.splitext(data_path)
                 label_path = basename + ".txt"
                 if ext not in self.img_formats:
                     print("img type error:%s" % img_type)
@@ -277,11 +282,13 @@ class TensorDataset():
                     if os.path.exists(data_path) and os.path.exists(label_path):
                         self.data_list.append(data_path)
                     else:
-                        print("{} or {} is not exist".format(data_path, label_path))
-        print("数据集大小:{}, 载入:{}, 忽略：{}".format(linelength, len(self.data_list), linelength - len(self.data_list)))
+                        print("{} or {} is not exist".format(
+                            data_path, label_path))
+        # print("数据集大小:{}, 载入:{}, 忽略：{}".format(linelength, len(self.data_list), linelength - len(self.data_list)))
+
     def getimageinfo(self, index):
         img_path = self.data_list[index]
-        basename, _ = os.path.splitext(img_path) 
+        basename, _ = os.path.splitext(img_path)
         label_path = label_path = basename + ".txt"
 
         # 加载图片
@@ -300,7 +307,7 @@ class TensorDataset():
                 #assert (label >= 0).all(), 'negative labels: %s'%label_path
                 #assert (label[:, 1:] <= 1).all(), 'non-normalized or out of bounds coordinate labels: %s'%label_path
         else:
-            raise Exception("%s is not exist" % label_path) 
+            raise Exception("%s is not exist" % label_path)
         return img, label
 
     def getoneimage(self, index):
@@ -322,7 +329,8 @@ class TensorDataset():
                 xyxylabels.append(
                     [(b1 - b3/2) * w, (b2 - b4/2) * h, (b1 + b3/2) * w, (b2 + b4/2) * h, l])
             image_list.append([img, xyxylabels])
-        image, bboxes = get_random_data(image_list, input_shape=(self.img_width, self.img_height))
+        image, bboxes = get_random_data(
+            image_list, input_shape=(self.img_width, self.img_height))
         labels = []
         for bbox in (bboxes):
             for box in bbox:
@@ -340,16 +348,18 @@ class TensorDataset():
             img, label = self.getmosacimage(index)
         else:
             img, label = self.getoneimage(index)
-        img = cv2.resize(img, (self.img_width, self.img_height), interpolation = cv2.INTER_LINEAR) # 尺寸变换
-        img = img.transpose(2,0,1)
-        
+        img = cv2.resize(img, (self.img_width, self.img_height),
+                         interpolation=cv2.INTER_LINEAR)  # 尺寸变换
+        img = img.transpose(2, 0, 1)
+
         return torch.from_numpy(img), torch.from_numpy(label)
 
     def __len__(self):
         return len(self.data_list)
 
+
 if __name__ == "__main__":
-    data = TensorDataset("/home/jovyan/fast-data/coco/val2017.txt",512,512)
+    data = TensorDataset("/home/jovyan/fast-data/coco/val2017.txt", 512, 512)
     img, label = data.__getitem__(0)
     print(img.shape)
     print(label.shape)
