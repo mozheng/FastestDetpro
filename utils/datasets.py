@@ -259,23 +259,30 @@ class TensorDataset():
         self.data_list = []
         self.img_width = img_width
         self.img_height = img_height
-        self.img_formats = ['bmp', 'jpg', 'jpeg', 'png']
+        self.img_formats = ['.bmp', '.jpg', '.jpeg', '.png']
 
         # 数据检查
+        
         with open(self.path, 'r') as f:
-            for line in f.readlines():
+            lines = f.readlines()
+            linelength = len(lines)
+            for line in lines:
                 data_path = line.strip()
-                if os.path.exists(data_path):
-                    img_type = data_path.split(".")[-1]
-                    if img_type not in self.img_formats:
-                        raise Exception("img type error:%s" % img_type)
-                    else:
-                        self.data_list.append(data_path)
+                basename, ext = os.path.splitext(data_path) 
+                label_path = basename + ".txt"
+                if ext not in self.img_formats:
+                    print("img type error:%s" % img_type)
+                    continue
                 else:
-                    raise Exception("%s is not exist" % data_path)
+                    if os.path.exists(data_path) and os.path.exists(label_path):
+                        self.data_list.append(data_path)
+                    else:
+                        print("{} or {} is not exist".format(data_path, label_path))
+        print("数据集大小:{}, 载入:{}, 忽略：{}".format(linelength, len(self.data_list), linelength - len(self.data_list)))
     def getimageinfo(self, index):
         img_path = self.data_list[index]
-        label_path = img_path.split(".")[0] + ".txt"
+        basename, _ = os.path.splitext(img_path) 
+        label_path = label_path = basename + ".txt"
 
         # 加载图片
         img = cv2.imread(img_path)
@@ -307,7 +314,7 @@ class TensorDataset():
         img, label = self.getimageinfo(index)
         image_list = []
         for i in range(4):
-            img, labels = self.getoneimage(random_integer(self.len(self.data_list)))
+            img, labels = self.getoneimage(random_integer(len(self.data_list)))
             h, w = img.shape[:2]
             xyxylabels = []
             for label in labels:
@@ -315,16 +322,18 @@ class TensorDataset():
                 xyxylabels.append(
                     [(b1 - b3/2) * w, (b2 - b4/2) * h, (b1 + b3/2) * w, (b2 + b4/2) * h, l])
             image_list.append([img, xyxylabels])
-        image, bboxes = get_random_data(image_list, input_shape=(self.img_size_width, self.img_size_height))
+        image, bboxes = get_random_data(image_list, input_shape=(self.img_width, self.img_height))
         labels = []
         for bbox in (bboxes):
             for box in bbox:
-                x = label[0] / self.img_size_width
-                y = label[1] / self.img_size_height
-                w = (label[2] - label[0]) / self.img_size_width
-                h = (label[3] - label[1]) / self.img_size_height
+                if len(box) == 0:
+                    continue
+                x = label[0] / self.img_width
+                y = label[1] / self.img_height
+                w = (label[2] - label[0]) / self.img_width
+                h = (label[3] - label[1]) / self.img_height
                 labels.append([0, label[4], x+w/2, y+h/2, w, h])
-        return image, labels
+        return image, np.array(labels)
 
     def __getitem__(self, index):
         if random_integer(2) % 2 == 0 and self.random_mosac:  # 随机采取mosac方法。
@@ -340,7 +349,7 @@ class TensorDataset():
         return len(self.data_list)
 
 if __name__ == "__main__":
-    data = TensorDataset("/home/xuehao/Desktop/TMP/pytorch-yolo/widerface/train.txt")
+    data = TensorDataset("/home/jovyan/fast-data/coco/val2017.txt",512,512)
     img, label = data.__getitem__(0)
     print(img.shape)
     print(label.shape)
