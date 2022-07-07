@@ -128,7 +128,8 @@ def train(local_rank, opt):
     dist.init_process_group(backend="nccl" if (dist.is_nccl_available() and opt.dist_backend == "nccl") else "gloo",
                             init_method=opt.dist_url, rank=local_rank, world_size=opt.world_size)
 
-    model, loss_function, train_dataloader, val_dataloader = load_model(local_rank, opt)
+    model, loss_function, train_dataloader, val_dataloader = load_model(
+        local_rank, opt)
 
     device = torch.device("cuda:%d" % local_rank)
 
@@ -151,6 +152,7 @@ def train(local_rank, opt):
         pbar = tqdm(train_dataloader)
         for imgs, targets in pbar:
             # 数据预处理
+            torch.distributed.barrier()
             imgs = imgs.to(device).float() / 255.0
             targets = targets.to(device)
 
@@ -175,7 +177,6 @@ def train(local_rank, opt):
                 lr = g["lr"]
             if local_rank == 0:
                 # 打印相关训练信息
-                torch.distributed.barrier()
                 tfwriter.add_scalar('train/lr', lr, global_step=epoch)
                 tfwriter.add_scalar(
                     'train/iou_loss', iou, global_step=epoch)
@@ -193,7 +194,6 @@ def train(local_rank, opt):
         # 模型验证及保存
         if epoch % 10 == 0 and epoch > 0:
             if local_rank == 0:
-                torch.distributed.barrier()
                 # 模型评估
                 model.eval()
                 print("computer mAP...")

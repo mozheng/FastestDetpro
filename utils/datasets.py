@@ -7,7 +7,7 @@ import random
 
 
 def random_integer(lens):
-    return random.randint(1, lens)
+    return random.randint(0, lens)
 
 
 def merge_bboxes(bboxes, cutx, cuty):
@@ -321,7 +321,8 @@ class TensorDataset():
         img, label = self.getimageinfo(index)
         image_list = []
         for i in range(4):
-            img, labels = self.getoneimage(random_integer(len(self.data_list)))
+            img, labels = self.getoneimage(
+                random_integer(len(self.data_list)-1))
             h, w = img.shape[:2]
             xyxylabels = []
             for label in labels:
@@ -344,7 +345,7 @@ class TensorDataset():
         return image, np.array(labels)
 
     def __getitem__(self, index):
-        if random_integer(2) % 2 == 0 and self.random_mosac:  # 随机采取mosac方法。
+        if random_integer(1) == 0 and self.random_mosac:  # 随机采取mosac方法。
             img, label = self.getmosacimage(index)
         else:
             img, label = self.getoneimage(index)
