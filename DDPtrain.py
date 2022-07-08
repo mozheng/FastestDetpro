@@ -74,7 +74,7 @@ def load_model(local_rank, opt):
     device = torch.device("cuda:%d" % local_rank)
     if opt.weight is not None:
         model = Detector(opt.cfg.category_num, True).to(device)
-        model.load_state_dict(torch.load(opt.weight))
+        model.load_state_dict({k.replace('module.',''):v for k,v in torch.load(opt.weight).items()})
     else:
         model = Detector(opt.cfg.category_num, False).to(device)
     if local_rank == 0:
@@ -147,7 +147,7 @@ def train(local_rank, opt):
     # 迭代训练
     batch_num = 0
     # print('Starting training for %g epochs...' % cfg.end_epoch)
-    for epoch in range(opt.cfg.end_epoch + 1):
+    for epoch in range(opt.cfg.start_epoch, opt.cfg.end_epoch + 1):
         model.train()
         pbar = tqdm(train_dataloader)
         for imgs, targets in pbar:
@@ -171,7 +171,7 @@ def train(local_rank, opt):
             # 学习率预热
             for g in optimizer.param_groups:
                 warmup_num = 5 * len(train_dataloader)
-                if batch_num <= warmup_num:
+                if batch_num <= warmup_num and opt.cfg.start_epoch == 0:
                     scale = math.pow(batch_num/warmup_num, 4)
                     g['lr'] = opt.cfg.learn_rate * scale
                 lr = g["lr"]
@@ -192,7 +192,7 @@ def train(local_rank, opt):
             batch_num += 1
 
         # 模型验证及保存
-        if epoch % 10 == 0 and epoch > 0:
+        if epoch % 10 == 0 and epoch > opt.cfg.start_epoch:
             if local_rank == 0:
                 # 模型评估
                 model.eval()

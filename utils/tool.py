@@ -16,6 +16,7 @@ class LoadYaml:
         self.batch_size = data["TRAIN"]["BATCH_SIZE"]
         self.milestones = data["TRAIN"]["MILESTIONES"]
         self.end_epoch = data["TRAIN"]["END_EPOCH"]
+        self.start_epoch= data["TRAIN"]["START_EPOCH"]
         
         self.input_width = data["MODEL"]["INPUT_WIDTH"]
         self.input_height = data["MODEL"]["INPUT_HEIGHT"]
