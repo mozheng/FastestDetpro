@@ -259,7 +259,7 @@ class TensorDataset():
         assert os.path.exists(path), "%s文件路径错误或不存在" % path
 
         self.aug = aug
-        self.random_mosac = True
+        self.random_mosac = aug
         self.path = path
         self.data_list = []
         self.img_width = img_width
@@ -345,7 +345,7 @@ class TensorDataset():
         return image, np.array(labels)
 
     def __getitem__(self, index):
-        if random_integer(1) == 0 and self.random_mosac:  # 随机采取mosac方法。
+        if self.random_mosac and random_integer(1) == 0:  # 随机采取mosac方法。
             img, label = self.getmosacimage(index)
         else:
             img, label = self.getoneimage(index)
@@ -360,7 +360,7 @@ class TensorDataset():
 
 
 if __name__ == "__main__":
-    data = TensorDataset("/home/jovyan/fast-data/coco/val2017.txt", 512, 512)
+    data = TensorDataset("E:\\datasets\\coco\\val2017.txt", 640, 384, True)
     img, label = data.__getitem__(0)
     print(img.shape)
     print(label.shape)
