@@ -152,7 +152,7 @@ def train(local_rank, opt):
         pbar = tqdm(train_dataloader)
         for imgs, targets in pbar:
             # 数据预处理
-            torch.distributed.barrier()
+            # torch.distributed.barrier()
             imgs = imgs.to(device).float() / 255.0
             targets = targets.to(device)
 
