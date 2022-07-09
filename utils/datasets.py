@@ -337,11 +337,11 @@ class TensorDataset():
             for box in bbox:
                 if len(box) == 0:
                     continue
-                x = label[0] / self.img_width
-                y = label[1] / self.img_height
-                w = (label[2] - label[0]) / self.img_width
-                h = (label[3] - label[1]) / self.img_height
-                labels.append([0, label[4], x+w/2, y+h/2, w, h])
+                x = box[0] / self.img_width
+                y = box[1] / self.img_height
+                w = (box[2] - box[0]) / self.img_width
+                h = (box[3] - box[1]) / self.img_height
+                labels.append([0, box[4], x+w/2, y+h/2, w, h])
         return image, np.array(labels)
 
     def __getitem__(self, index):

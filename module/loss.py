@@ -122,6 +122,7 @@ class DetectorLoss(nn.Module):
 
         # 定义obj和cls的损失函数
         BCEcls = nn.NLLLoss() 
+        # BCEobj = nn.BCELoss(reduction='none')
         BCEobj = nn.BCEWithLogitsLoss(reduction='none')
         BCEobj = QFocalLoss(BCEobj)
         # 构建ground truth
