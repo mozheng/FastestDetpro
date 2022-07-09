@@ -28,6 +28,7 @@ FastestDet|25.0%|12.3%|352X352|23.51ms|70.62ms|0.24M
 Equipment|Computing backend|System|Framework|Run time(Single core)|Run time(Multi core)
 :---:|:---:|:---:|:---:|:---:|:---:
 Radxa rock3a|RK3568(arm-cpu)|Linux(aarch64)|ncnn|70.62ms|23.51ms
+Radxa rock3a|RK3568(NPU)|Linux(aarch64)|rknn|28ms|-
 Qualcomm|Snapdragon 835(arm-cpu)|Android(aarch64)|ncnn|32.34ms|16.24ms
 Intel|i7-8700(X86-cpu)|Linux(amd64)|ncnn|4.51ms|4.33ms
 # How to use
@@ -179,6 +180,18 @@ TRAIN:
 * You can export .onnx by adding the --onnx option when executing test.py
   ```
   python3 test.py --yaml configs/coco.yaml --weight weights/coco_ap05_0.250_280epoch.pth --img data/3.jpg --onnx
+  ```
+## Export torchscript
+* You can export .pt by adding the --torchscript option when executing test.py
+  ```
+  python3 test.py --yaml configs/coco.yaml --weight weights/coco_ap05_0.250_280epoch.pth --img data/3.jpg --torchscript
+  ```
+## NCNN
+* Need to compile ncnn and opencv in advance and modify the path in build.sh
+  ```
+  cd example/ncnn/
+  sh build.sh
+  ./FastestDet
   ```
 ## onnx-runtime
 * You can learn about the pre and post-processing methods of FastestDet in this Sample

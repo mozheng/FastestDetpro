@@ -1,7 +1,9 @@
 import os
 import cv2
+import onnx
 import time
 import argparse
+from onnxsim import simplify
 
 import torch
 from utils.tool import *
@@ -15,6 +17,7 @@ if __name__ == '__main__':
     parser.add_argument('--img', type=str, default='', help='The path of test image')
     parser.add_argument('--thresh', type=float, default=0.65, help='The path of test image')
     parser.add_argument('--onnx', action="store_true", default=False, help='Export onnx file')
+    parser.add_argument('--torchscript', action="store_true", default=False, help='Export torchscript file')
     parser.add_argument('--cpu', action="store_true", default=False, help='Run on cpu')
 
     opt = parser.parse_args()
@@ -54,12 +57,27 @@ if __name__ == '__main__':
 
     # 导出onnx模型
     if opt.onnx:
-        torch.onnx.export(model,                    #model being run
-                          img,                 # model input (or a tuple for multiple inputs)
-                          "./FastestDet.onnx",             # where to save the model (can be a file or file-like object)
+        torch.onnx.export(model,                     # model being run
+                          img,                       # model input (or a tuple for multiple inputs)
+                          "./FastestDet.onnx",       # where to save the model (can be a file or file-like object)
                           export_params=True,        # store the trained parameter weights inside the model file
                           opset_version=11,          # the ONNX version to export the model to
                           do_constant_folding=True)  # whether to execute constant folding for optimization
+        # onnx-sim
+        onnx_model = onnx.load("./FastestDet.onnx")  # load onnx model
+        model_simp, check = simplify(onnx_model)
+        assert check, "Simplified ONNX model could not be validated"
+        print("onnx sim sucess...")
+        onnx.save(model_simp, "./FastestDet.onnx")                  
+
+    # 导出torchscript模型
+    if opt.torchscript:
+        import copy
+        model_cpu = copy.deepcopy(model).cpu()
+        x = torch.rand(1, 3, cfg.input_height, cfg.input_width)
+        mod = torch.jit.trace(model_cpu, x)
+        mod.save("./FastestDet.pt")
+        print("to convert torchscript to pnnx/ncnn: ./pnnx FastestDet.pt inputshape=[1,3,%d,%d]" % (cfg.input_height, cfg.input_height))
 
     # 模型推理
     start = time.perf_counter()
@@ -69,7 +87,7 @@ if __name__ == '__main__':
     print("forward time:%fms"%time)
 
     # 特征图后处理
-    output = handel_preds(preds, device, opt.thresh)
+    output = handle_preds(preds, device, opt.thresh)
 
     # 加载label names
     LABEL_NAMES = []
