@@ -279,12 +279,12 @@ class TensorDataset():
                     print("img type error:%s" % img_type)
                     continue
                 else:
-                    if os.path.exists(data_path) and os.path.exists(label_path):
+                    if os.path.exists(data_path) and os.path.exists(label_path) and os.path.getsize(label_path)!=0:
                         self.data_list.append(data_path)
                     else:
-                        print("{} or {} is not exist".format(
-                            data_path, label_path))
-        # print("数据集大小:{}, 载入:{}, 忽略：{}".format(linelength, len(self.data_list), linelength - len(self.data_list)))
+                        pass
+                        # print("{} or {} is not exist".format(data_path, label_path))
+        print("数据集大小:{}, 载入:{}, 忽略：{}".format(linelength, len(self.data_list), linelength - len(self.data_list)))
 
     def getimageinfo(self, index):
         img_path = self.data_list[index]

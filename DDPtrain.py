@@ -211,5 +211,3 @@ if __name__ == "__main__":
     args = parse_args()
     opt = init(args)
     mp.spawn(train, nprocs=opt.world_size, args=(opt,))
-
-    dist.destroy_process_group()
