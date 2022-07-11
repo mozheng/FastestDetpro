@@ -14,7 +14,7 @@ def merge_bboxes(bboxes, cutx, cuty):
     # 保存修改后的检测框
     merge_box = []
 
-    # 遍历每张图像，共4个
+    # 遍历每张图像,共4个
     for i, boxes in enumerate(bboxes):
 
         # 每张图片中需要删掉的检测框
@@ -23,19 +23,19 @@ def merge_bboxes(bboxes, cutx, cuty):
         # 遍历每张图的所有检测框,index代表第几个框
         for index, box in enumerate(boxes[0]):
 
-            # axis=1纵向删除index索引指定的列，axis=0横向删除index指定的行
+            # axis=1纵向删除index索引指定的列,axis=0横向删除index指定的行
             # box[0] = np.delete(box[0], index, axis=0)
 
             # 获取每个检测框的宽高
             x1, y1, x2, y2 = box[:4]
 
-            # 如果是左上图，修正右侧和下侧框线
+            # 如果是左上图,修正右侧和下侧框线
             if i == 0:
-                # 如果检测框左上坐标点不在第一部分中，就忽略它
+                # 如果检测框左上坐标点不在第一部分中,就忽略它
                 if x1 > cutx or y1 > cuty:
                     index_list.append(index)
 
-                # 如果检测框右下坐标点不在第一部分中，右下坐标变成边缘点
+                # 如果检测框右下坐标点不在第一部分中,右下坐标变成边缘点
                 if y2 >= cuty and y1 <= cuty:
                     y2 = cuty
                     if y2-y1 < 5:
@@ -43,11 +43,11 @@ def merge_bboxes(bboxes, cutx, cuty):
 
                 if x2 >= cutx and x1 <= cutx:
                     x2 = cutx
-                    # 如果修正后的左上坐标和右下坐标之间的距离过小，就忽略这个框
+                    # 如果修正后的左上坐标和右下坐标之间的距离过小,就忽略这个框
                     if x2-x1 < 5:
                         index_list.append(index)
 
-            # 如果是右上图，修正左侧和下册框线
+            # 如果是右上图,修正左侧和下册框线
             if i == 1:
                 if x2 < cutx or y1 > cuty:
                     index_list.append(index)
@@ -96,7 +96,7 @@ def merge_bboxes(bboxes, cutx, cuty):
             bboxes[i][0][index][:4] = np.array(
                 [x1, y1, x2, y2])  # 更新第i张图的第index个检测框的坐标
 
-        # 删除不满足要求的框，并保存
+        # 删除不满足要求的框,并保存
         merge_box.append(np.delete(bboxes[i][0], index_list, axis=0))
 
     # 返回坐标信息
@@ -115,7 +115,7 @@ def get_random_data(image_list, input_shape, min_offset=(0.3, 0.3)):
     image_datas = []  # 存放图像信息
     box_datas = []  # 存放检测框信息
 
-    # （1）图像分割
+    # (1)图像分割
     for index, frame_list in enumerate(image_list):
 
         frame = frame_list[0]  # 取出的某一张图像
@@ -186,7 +186,7 @@ def get_random_data(image_list, input_shape, min_offset=(0.3, 0.3)):
             box_datas.append(box)
         else:
             image_datas.append(new_frame)
-    # （2）将四张图像拼接在一起
+    # (2)将四张图像拼接在一起
     # 在指定范围中选择横纵向分割线
     cutx = np.random.randint(int(w*min_offset_x), int(w*(1-min_offset_x)))
     cuty = np.random.randint(int(h*min_offset_y), int(h*(1-min_offset_y)))
@@ -238,8 +238,11 @@ def random_scale(image, boxes):
 
         bx, by = (bx - cx)/roi_w, (by - cy)/roi_h
         bw, bh = bw/roi_w, bh/roi_h
-
-        output.append([index, category, bx, by, bw, bh])
+        x1 = max(bx - bw/2, 0)
+        y1 = max(by - bh/2, 0)
+        x2 = min(bx + bw/2, 1)
+        y2 = min(by + bh/2, 1)
+        output.append([index, category, (x1 + x2)/2, (y1+y2)/2, x2-x1, y2-y1])
 
     output = np.array(output, dtype=float)
 
@@ -254,12 +257,72 @@ def collate_fn(batch):
     return torch.stack(img), torch.cat(label, 0)
 
 
+def letterbox_image(image_src, boxes, dst_size, pad_color=(114, 114, 114)):
+    """
+    缩放图片,保持长宽比。
+    :param image_src:       原图(numpy)
+    :param boxes:    (numpy,(-1,6))标注框,采用归一化的形式,0, label, x/w, y/h, w/w, h/h
+    :param dst_size:        (w, h)
+    :param pad_color:       填充颜色, 默认是灰色
+    :return:
+    """
+    src_h, src_w = image_src.shape[:2]
+    dst_w, dst_h = dst_size
+    if src_h == dst_w and src_w == dst_h:
+        return image_src, boxes.clone() if isinstance(boxes, torch.Tensor) else np.copy(boxes)
+
+    scale = min(dst_h / src_h, dst_w / src_w)
+    resize_h, resize_w = int(round(src_h * scale)), int(round(src_w * scale))
+
+    top = int((dst_h - resize_h) / 2)       # 顶部填充
+    down = int((dst_h - resize_h + 1) / 2)  # 底部填充
+    left = int((dst_w - resize_w) / 2)      # 左边填充
+    right = int((dst_w - resize_w + 1) / 2)  # 右边填充
+
+    # 因为可能有1像素误差,所以需要做一下修正
+    resize_w = dst_w - left - right
+    resize_h = dst_h - top - down
+    image_dst = cv2.resize(image_src, (resize_w, resize_h),
+                           interpolation=cv2.INTER_LINEAR)
+
+    # add border
+    image_dst = cv2.copyMakeBorder(
+        image_dst, top, down, left, right, cv2.BORDER_CONSTANT, value=pad_color)
+    y = boxes.clone() if isinstance(boxes, torch.Tensor) else boxes.copy()
+
+    x_offset, y_offset = max(left, right), max(top, down)
+    y[:, 2] = (resize_w * boxes[:, 2] + x_offset)/dst_w  # top left x
+    y[:, 3] = (resize_h * boxes[:, 3] + y_offset)/dst_h  # top left y
+    y[:, 4] = (resize_w * boxes[:, 4])/dst_w  # bottom right x
+    y[:, 5] = (resize_h * boxes[:, 5])/dst_h  # bottom right y
+
+    modify_image_copy = image_dst.copy()
+    # 绘制修正后的检测框
+    for box in y:
+        # 获取某一个框的坐标
+        x, y, w, h = box[2:6]
+        x1 = (x - w/2)*dst_w
+        y1 = (y - h/2)*dst_h
+        x2 = (x + w/2)*dst_w
+        y2 = (y + h/2)*dst_h
+        cv2.rectangle(modify_image_copy, (int(x1), int(y1)),
+                      (int(x2), int(y2)), (0, 255, 0), 2)
+        cv2.putText(modify_image_copy, str(box[1]), (int(x1), int(
+            y1)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 1)
+    cv2.imshow('new_img_bbox', modify_image_copy)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    return image_dst, y
+
+
 class TensorDataset():
     def __init__(self, path, img_width, img_height, aug=False):
         assert os.path.exists(path), "%s文件路径错误或不存在" % path
 
         self.aug = aug
-        self.random_mosac = aug
+        self.random_mosac = False
+        self.letterbox = True
         self.path = path
         self.data_list = []
         self.img_width = img_width
@@ -279,12 +342,13 @@ class TensorDataset():
                     print("img type error:%s" % img_type)
                     continue
                 else:
-                    if os.path.exists(data_path) and os.path.exists(label_path) and os.path.getsize(label_path)!=0:
+                    if os.path.exists(data_path) and os.path.exists(label_path) and os.path.getsize(label_path) != 0:
                         self.data_list.append(data_path)
                     else:
                         pass
                         # print("{} or {} is not exist".format(data_path, label_path))
-        print("数据集大小:{}, 载入:{}, 忽略：{}".format(linelength, len(self.data_list), linelength - len(self.data_list)))
+        print("数据集大小:{}, 载入:{}, 忽略：{}".format(linelength, len(
+            self.data_list), linelength - len(self.data_list)))
 
     def getimageinfo(self, index):
         img_path = self.data_list[index]
@@ -348,10 +412,15 @@ class TensorDataset():
         if self.random_mosac and random_integer(1) == 0:  # 随机采取mosac方法。
             img, label = self.getmosacimage(index)
         else:
-            img, label = self.getoneimage(index)
+            if self.letterbox:
+                img, label = self.getoneimage(index)
+                img, label = letterbox_image(
+                    img, label, (self.img_width, self.img_height))
+            else:
+                img, label = self.getoneimage(index)
         img = cv2.resize(img, (self.img_width, self.img_height),
                          interpolation=cv2.INTER_LINEAR)  # 尺寸变换
-        img = img.transpose(2, 0, 1).astype(np.float64)/ 255.0
+        img = img.transpose(2, 0, 1).astype(np.float64) / 255.0
 
         return torch.from_numpy(img), torch.from_numpy(label)
 
@@ -361,6 +430,6 @@ class TensorDataset():
 
 if __name__ == "__main__":
     data = TensorDataset("E:\\datasets\\coco\\val2017.txt", 640, 384, True)
-    img, label = data.__getitem__(0)
+    img, label = data.__getitem__(10)
     print(img.shape)
     print(label.shape)
