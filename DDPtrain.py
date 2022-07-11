@@ -153,7 +153,7 @@ def train(local_rank, opt):
         for imgs, targets in pbar:
             # 数据预处理
             # torch.distributed.barrier()
-            imgs = imgs.to(device).float() / 255.0
+            imgs = imgs.to(device)
             targets = targets.to(device)
 
             optimizer.zero_grad()

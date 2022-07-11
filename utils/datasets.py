@@ -351,7 +351,7 @@ class TensorDataset():
             img, label = self.getoneimage(index)
         img = cv2.resize(img, (self.img_width, self.img_height),
                          interpolation=cv2.INTER_LINEAR)  # 尺寸变换
-        img = img.transpose(2, 0, 1)
+        img = img.transpose(2, 0, 1).astype(np.float64)/ 255.0
 
         return torch.from_numpy(img), torch.from_numpy(label)
 

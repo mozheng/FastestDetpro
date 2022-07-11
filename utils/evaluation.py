@@ -63,7 +63,7 @@ class CocoDetectionEvaluator():
         pbar = tqdm(val_dataloader)
         for i, (imgs, targets) in enumerate(pbar):
             # 数据预处理
-            imgs = imgs.to(self.device).float() / 255.0
+            imgs = imgs.to(self.device)
             with torch.no_grad():
                 # 模型预测
                 preds = model(imgs)

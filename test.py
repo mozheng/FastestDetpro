@@ -53,7 +53,7 @@ if __name__ == '__main__':
     res_img = cv2.resize(ori_img, (cfg.input_width, cfg.input_height), interpolation = cv2.INTER_LINEAR) 
     img = res_img.reshape(1, cfg.input_height, cfg.input_width, 3)
     img = torch.from_numpy(img.transpose(0, 3, 1, 2))
-    img = img.to(device).float() / 255.0
+    img = img.to(device)
 
     # 导出onnx模型
     if opt.onnx:

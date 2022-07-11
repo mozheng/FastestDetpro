@@ -20,8 +20,8 @@ SAVE_VAL_LABELS_FILE = os.path.join(DATASET_PATH, 'val.txt')
 # classname = OrderedDict((('traffic light', 0), ('traffic sign', 1), ('bus', 2),
 #                    ('truck', 3), ('person', 4), ('motor', 5),
 #                    ('bike', 6), ('rider', 7), ('train', 8), ('car', 9)))
-classname = OrderedDict((('person', 0), ('bike', 1), ('motor', 2), ('car', 3),
-                         ('bus', 4), ('truck', 5), ('train', 6)))
+classname = OrderedDict((('person', 0), ('bike', 1), ('car', 2),
+                         ('bus', 3), ('truck', 4)))
 
 
 def convert_bdd2yolo(read_images_path, read_labels_path, save_file, save_dir):
@@ -44,6 +44,8 @@ def convert_bdd2yolo(read_images_path, read_labels_path, save_file, save_dir):
                     obj_name = object['category']
                     if obj_name == "rider":
                         obj_name = "person"
+                    if obj_name == "motor":
+                        obj_name = "bike"
                     if obj_name not in classname.keys():
                         continue
                     x1 = float(object['box2d']['x1'])

@@ -1,10 +1,10 @@
 import cv2
 
-classname = ['person', 'bike', 'motor', 'car', 'bus', 'truck', 'train']
+classname = ['person', 'bike',  'car', 'bus', 'truck']
 
 if __name__ == "__main__":
-    imgpath = "fast-data/bdd100k/images/100k/train/02d5e1be-8b51b241.jpg"
-    labelpath = "fast-data/bdd100k/images/100k/train/02d5e1be-8b51b241.txt"
+    imgpath = "fast-data/bdd100k/images/100k/train/00abf44e-421f6ed7.jpg"
+    labelpath = "fast-data/bdd100k/images/100k/train/00abf44e-421f6ed7.txt"
     img = cv2.imread(imgpath)
     h, w = img.shape[:2]
     with open(labelpath, 'r') as f:
@@ -22,4 +22,5 @@ if __name__ == "__main__":
             cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.putText(img, classname[class_id], (x1, y1),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    img = cv2.resize(img, (640, 384))
     cv2.imwrite("a.jpg", img)
