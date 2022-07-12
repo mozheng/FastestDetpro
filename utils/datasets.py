@@ -296,22 +296,22 @@ def letterbox_image(image_src, boxes, dst_size, pad_color=(114, 114, 114)):
     y[:, 4] = (resize_w * boxes[:, 4])/dst_w  # bottom right x
     y[:, 5] = (resize_h * boxes[:, 5])/dst_h  # bottom right y
 
-    modify_image_copy = image_dst.copy()
-    # 绘制修正后的检测框
-    for box in y:
-        # 获取某一个框的坐标
-        x, y, w, h = box[2:6]
-        x1 = (x - w/2)*dst_w
-        y1 = (y - h/2)*dst_h
-        x2 = (x + w/2)*dst_w
-        y2 = (y + h/2)*dst_h
-        cv2.rectangle(modify_image_copy, (int(x1), int(y1)),
-                      (int(x2), int(y2)), (0, 255, 0), 2)
-        cv2.putText(modify_image_copy, str(box[1]), (int(x1), int(
-            y1)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 1)
-    cv2.imshow('new_img_bbox', modify_image_copy)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # modify_image_copy = image_dst.copy()
+    # # 绘制修正后的检测框
+    # for box in y:
+    #     # 获取某一个框的坐标
+    #     x, y, w, h = box[2:6]
+    #     x1 = (x - w/2)*dst_w
+    #     y1 = (y - h/2)*dst_h
+    #     x2 = (x + w/2)*dst_w
+    #     y2 = (y + h/2)*dst_h
+    #     cv2.rectangle(modify_image_copy, (int(x1), int(y1)),
+    #                   (int(x2), int(y2)), (0, 255, 0), 2)
+    #     cv2.putText(modify_image_copy, str(box[1]), (int(x1), int(
+    #         y1)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 1)
+    # cv2.imshow('new_img_bbox', modify_image_copy)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
     return image_dst, y
 
@@ -321,8 +321,8 @@ class TensorDataset():
         assert os.path.exists(path), "%s文件路径错误或不存在" % path
 
         self.aug = aug
-        self.random_mosac = False
-        self.letterbox = True
+        self.random_mosac = False and aug
+        self.letterbox = True and aug
         self.path = path
         self.data_list = []
         self.img_width = img_width
@@ -420,7 +420,7 @@ class TensorDataset():
                 img, label = self.getoneimage(index)
         img = cv2.resize(img, (self.img_width, self.img_height),
                          interpolation=cv2.INTER_LINEAR)  # 尺寸变换
-        img = img.transpose(2, 0, 1).astype(np.float64) / 255.0
+        img = img.transpose(2, 0, 1).astype(np.float) / 255.0
 
         return torch.from_numpy(img), torch.from_numpy(label)
 

@@ -56,6 +56,7 @@ def parse_args():
                         help='distributed world size')
     parser.add_argument('--tflog', type=str, default='',
                         help='tensorboard log dir')
+    parser.add_argument('--amp', action='store_true', default=False)
     return parser.parse_args()
 
 
@@ -74,7 +75,8 @@ def load_model(local_rank, opt):
     device = torch.device("cuda:%d" % local_rank)
     if opt.weight is not None:
         model = Detector(opt.cfg.category_num, True).to(device)
-        model.load_state_dict({k.replace('module.',''):v for k,v in torch.load(opt.weight).items()})
+        model.load_state_dict(
+            {k.replace('module.', ''): v for k, v in torch.load(opt.weight).items()})
     else:
         model = Detector(opt.cfg.category_num, False).to(device)
     if local_rank == 0:
@@ -153,20 +155,30 @@ def train(local_rank, opt):
         for imgs, targets in pbar:
             # 数据预处理
             # torch.distributed.barrier()
-            imgs = imgs.to(device)
+            imgs = imgs.to(device).float()
             targets = targets.to(device)
 
             optimizer.zero_grad()
-            # 模型推理
-            with torch.cuda.amp.autocast():
+            if opt.amp:
+                # 模型推理
+                with torch.cuda.amp.autocast():
+                    preds = model(imgs)
+                    # loss计算
+                    iou, obj, cls, total = loss_function(preds, targets)
+                # 反向传播求解梯度
+                scaler.scale(total).backward()
+                # 更新模型参数
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                # 模型推理
                 preds = model(imgs)
                 # loss计算
-                iou, obj, cls, total = loss_function(preds, targets)
-            # 反向传播求解梯度
-            scaler.scale(total).backward()
-            # 更新模型参数
-            scaler.step(optimizer)
-            scaler.update()
+                iou, obj, cls, total = self.loss_function(preds, targets)
+                # 反向传播求解梯度
+                total.backward()
+                # 更新模型参数
+                optimizer.step()
 
             # 学习率预热
             for g in optimizer.param_groups:

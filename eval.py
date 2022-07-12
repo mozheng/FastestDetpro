@@ -29,7 +29,8 @@ if __name__ == '__main__':
     # 加载模型权重
     print("load weight from:%s"%opt.weight)
     model = Detector(cfg.category_num, True).to(device)
-    model.load_state_dict(torch.load(opt.weight))
+    model.load_state_dict(
+        {k.replace('module.', ''): v for k, v in torch.load(opt.weight, map_location=torch.device(device)).items()})
     model.eval()
 
     # # 打印网络各层的张量维度

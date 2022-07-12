@@ -34,7 +34,8 @@ class FastestDet:
         if opt.weight is not None:
             print("load weight from:%s"%opt.weight)
             self.model = Detector(self.cfg.category_num, True).to(device)
-            self.model.load_state_dict(torch.load(opt.weight))
+            self.model.load_state_dict(torch.load(
+                opt.weight, map_location=torch.device(device)))
         else:
             self.model = Detector(self.cfg.category_num, False).to(device)
 
@@ -91,7 +92,7 @@ class FastestDet:
             pbar = tqdm(self.train_dataloader)
             for imgs, targets in pbar:
                 # 数据预处理
-                imgs = imgs.to(device).float() / 255.0
+                imgs = imgs.to(device).float()
                 targets = targets.to(device)
                 # 模型推理
                 preds = self.model(imgs)
