@@ -220,7 +220,7 @@ def get_random_data(image_list, input_shape, min_offset=(0.3, 0.3)):
     return new_image, new_boxes
 
 
-def random_scale(image, boxes):
+def random_crop(image, boxes):
     height, width, _ = image.shape
     # random crop imgage
     cw, ch = random.randint(
@@ -248,6 +248,30 @@ def random_scale(image, boxes):
 
     return roi, output
 
+
+def random_narrow(image, boxes):
+    height, width, _ = image.shape
+    # random narrow
+    cw, ch = random.randint(width, int(width * 1.25)), random.randint(height, int(height * 1.25))
+    cx, cy = random.randint(0, cw - width), random.randint(0, ch - height)
+
+    background = np.ones((ch, cw, 3), np.uint8) * 128
+    background[cy:cy + height, cx:cx + width] = image
+
+    output = []
+    for box in boxes:
+        index, category = box[0], box[1]
+        bx, by = box[2] * width, box[3] * height
+        bw, bh = box[4] * width, box[5] * height
+
+        bx, by = (bx + cx)/cw, (by + cy)/ch
+        bw, bh = bw/cw, bh/ch
+
+        output.append([index, category, bx, by, bw, bh])
+
+    output = np.array(output, dtype=float)
+
+    return background, output
 
 def collate_fn(batch):
     img, label = zip(*batch)
@@ -339,7 +363,7 @@ class TensorDataset():
                 basename, ext = os.path.splitext(data_path)
                 label_path = basename + ".txt"
                 if ext not in self.img_formats:
-                    print("img type error:%s" % img_type)
+                    print("img type error:%s" % ext)
                     continue
                 else:
                     if os.path.exists(data_path) and os.path.exists(label_path) and os.path.getsize(label_path) != 0:
@@ -378,8 +402,10 @@ class TensorDataset():
         img, label = self.getimageinfo(index)
         # 是否进行数据增强
         if self.aug:
-            img, label = random_scale(img, label)
-        return img, label
+            if random.randint(1, 10) % 2 == 0:
+                img, label = random_narrow(img, label)
+            else:
+                img, label = random_crop(img, label)
 
     def getmosacimage(self, index):
         img, label = self.getimageinfo(index)
