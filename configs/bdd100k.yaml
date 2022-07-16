@@ -1,0 +1,19 @@
+DATASET:
+  TRAIN: "/home/jovyan/fast-data/100k/train.txt"
+  VAL: "/home/jovyan/fast-data/100k/val.txt"
+  NAMES: "configs/bdd100k.names"
+MODEL:
+  NC: 5
+  INPUT_WIDTH: 640
+  INPUT_HEIGHT: 384
+TRAIN:
+  LR: 0.008
+  THRESH: 0.25
+  WARMUP: false
+  BATCH_SIZE: 192
+  START_EPOCH: 0
+  END_EPOCH: 200
+  MILESTIONES:
+    - 80
+    - 140
+    - 200
