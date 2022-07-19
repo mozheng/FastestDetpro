@@ -98,7 +98,7 @@ class DetectorLoss(nn.Module):
             # 过滤越界坐标
             quadrant = quadrant.repeat(gt.size(1), 1, 1).permute(1, 0, 2)
             gij = gt[..., 2:4].long() + quadrant
-            j = torch.where(gij < H, gij, 0).min(dim=-1)[0] > 0 
+            j = torch.where(gij < torch.Tensor([W,H]).to(gij.device), gij, 0).min(dim=-1)[0] > 0 
 
             # 前景的位置下标
             gi, gj = gij[j].T
